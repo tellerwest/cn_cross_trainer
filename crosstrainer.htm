@@ -1,0 +1,380 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+	<title>CN Cross Trainer</title>
+	<meta name="viewport" content="width = device-width, initial-scale = 1.0" />
+	<link href="m.css" rel="stylesheet" type="text/css" />
+
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js	"></script>
+
+	<script type="text/javascript">
+		$(document).ready(function() {
+
+			/* document.ontouchmove = function(e) { e.preventDefault(); } */
+
+			var speed = 800;
+			var numberOfRounds = 20;
+
+			var s = 'WRYORYOWYRWOOYRWYBWGGYBWWBYGGWBYOBRGGOBRRBOGGRBO';
+			var colors = 'WYGBRO';
+
+			var xOffset, yOffset;
+
+			var state = -10;
+			var correct;
+			var isPlaying = false;
+
+			var cRight = 0;
+			var cWrong = 0;
+
+			var lastcr, lastce;
+
+			var delay;
+
+			function init() {
+				if (guessCount == numberOfRounds) {
+					showFinal();
+					return;
+				}
+
+				if (state == 0) return;
+				isPlaying = true;
+
+				clearTimeout(delay);
+
+				$("#state").css('background-position', '0 0');
+
+				state = 0;
+
+				do {
+					var crosscolor = Math.floor(Math.random() * 6) + 1;
+					var cell = Math.floor(Math.random() * 8);
+				}
+				while (((crosscolor == lastcr) && (cell == lastce)) || (!document.getElementById("c" + crosscolor).checked));
+				lastcr = crosscolor;
+				lastce = cell;
+
+				xOffset = (cell % 2) * -240;
+				yOffset = Math.floor(cell / 2) * -120;
+				yOffset = yOffset - ((crosscolor - 1) * 480);
+
+				$("#cube").css('background-position', xOffset + 'px ' + yOffset + 'px');
+
+				correct = s[((crosscolor - 1) * 8) + cell];
+
+				startClock();
+			}
+
+			var ticks;
+			var clock;
+			function startClock() {
+				clearInterval(clock);
+				ticks = 0;
+				clock = setInterval(function() {
+					tick();
+				}, speed);
+			}
+			function stopClock() {
+				clearInterval(clock);
+			}
+			function tick() {
+				if (ticks < 2) {
+					ticks++;
+					if (ticks == 2)
+						ticks = 0;
+					else
+						return;
+				}
+
+				if (ticks == 400) {
+					guess('X');
+				}
+				else {
+					ticks = ticks + 80;
+					$("#state").css('background-position', '0 -' + ticks + 'px');
+				}
+			}
+
+			var guessCount = 0;
+			var score;
+			function guess(color) {
+				stopClock();
+				guessCount++;
+				var wait;
+				$("#cube").css('background-position', '-120px ' + yOffset + 'px');
+				if (color == correct) {
+					$("#state").css('background-position', '0 -480px');
+					cRight++;
+					wait = 1600;
+				}
+				else {
+					$("#state").css('background-position', '0 -560px');
+					cWrong++;
+					wait = 2800;
+				}
+				score = Math.floor((cRight / (cRight + cWrong)) * 1000) / 10;
+				$("#score").text(cRight + " / " + (cRight + cWrong) + " = " + score + "%");
+				state++;
+				delay = setTimeout(function() {
+					init();
+				}, wait);
+			}
+
+			$('#legend').click(function(e) {
+				if (state > 0) return;
+				var posX = Math.floor((e.pageX - $(this).offset().left) / 33.3);
+				guess(colors[posX]);
+				e.stopPropagation();
+			});
+
+			$('#viewport').click(function() {
+				if (state > 0) init();
+			});
+
+			$(document).keyup(function(evt) {
+				if (state > 0)
+					init();
+				else {
+					var key = String.fromCharCode(evt.keyCode);
+					if (colors.indexOf(key) == -1) return;
+					guess(key);
+				}
+			});
+
+			$('#state').click(function() {
+				showConfig();
+			});
+			$('#back').click(function() {
+				state = 1;
+				init();
+				$('#setup').fadeOut(function() {
+					if (isPlaying)
+						$('#play').fadeIn();
+					else
+						$('#home').fadeIn();
+				});
+			});
+
+			function showConfig() {
+				stopClock();
+				$('#play').fadeOut(function() {
+					resetScore();
+					$('#setup').fadeIn();
+				});
+			}
+
+			function showFinal() {
+				$("#finalScore").text(score + "%");
+				$('#play').fadeOut(function() {
+					$('#final').fadeIn();
+				});
+			}
+
+			function resetScore() {
+				guessCount = 0;
+				cRight = 0;
+				cWrong = 0;
+				$("#score").text("");
+			}
+
+			$("#final").click(function() {
+				resetScore();
+				$('#final').fadeOut(function() {
+					$('#play').fadeIn();
+				});
+			});
+
+			$("#start").click(function(e) {
+				e.stopPropagation();
+				$("#home").fadeOut('fast', function() {
+					init();
+					$("#play").fadeIn('fast', function() {
+					});
+				});
+			});
+
+			$("#config").click(function() {
+				$("#home").fadeOut('fast', function() {
+					showConfig();
+				});
+			});
+
+		});
+
+	</script>
+
+	<style type="text/css">
+		#viewport
+		{
+			width: 220px;
+			min-height: 100px;
+			margin-top: 0px;
+			margin-left: 8px;
+		}
+		#play
+		{
+			display: none;
+			margin: 0;
+			padding: 0;
+			position: relative;
+		}
+		#cube
+		{
+			width: 120px;
+			height: 120px;
+			background-image: url(ima/cross/cubes.gif);
+			float: left;
+		}
+		#state
+		{
+			width: 80px;
+			height: 80px;
+			background-position: 0 0;
+			background-image: url(ima/cross/state.gif);
+			float: left;
+			cursor: pointer;
+		}
+		#legend
+		{
+			width: 200px;
+			height: 67px;
+			background-image: url(ima/cross/legend.gif);
+			cursor: pointer;
+		}
+		div#accuracy
+		{
+			font-weight: bold;
+		}
+		#setup
+		{
+			display: none;
+			margin: 1.0em 0 4.7em 0;
+		}
+		#back
+		{
+			margin-top: 1.0em;
+			color: Blue;
+			background-color: #C0C0C0;
+			width: 50px;
+			text-align: center;
+			font-weight: bold;
+			cursor: pointer;
+		}
+		#final
+		{
+			text-align: center;
+			display: none;
+			cursor: pointer;
+			font-weight: bold;
+		}
+		p#finalScore
+		{
+			font-size: 3.0em;
+			margin-top: 1.0em;
+			background-color: Black;
+			color: #C0C0C0;
+		}
+		div#replay
+		{
+			border: 1px solid blue;
+			width: 60%;
+			margin: auto;
+			padding: 8px;
+		}
+		div#home
+		{
+			position: relative;
+			text-align:center;
+		}
+		div#start
+		{
+			position:relative;
+			margin:auto;
+			margin-top:16px;
+			cursor: pointer;
+			width: 140px;
+			padding-top: 16px;
+			height: 50px;
+			border: 1px solid green;
+			background-color: #010101;
+			text-align: center;
+			font-size: 2.0em;
+			font-weight: bold;
+		}
+		div#config
+		{
+			position:relative;
+			margin:auto;
+			margin-top:32px;
+			cursor: pointer;
+			width: 140px;
+			padding-top: 8px;
+			height: 32px;
+			border: 1px solid blue;
+			background-color: #010101;
+			text-align: center;
+			font-size: 1.4em;
+			font-weight: bold;
+		}
+		div#config:hover, div#start:hover
+		{
+			border: 1px solid white;
+		}
+	</style>
+</head>
+<body>
+	<form id="form1" runat="server">
+	<div id="viewport">
+		<div id="home">
+			<div id="start">
+				START
+			</div>
+			<div id="config">
+				Options...
+			</div>
+			<h6 style="text-align:center;">
+				CN Cross Trainer<br />
+				Copyright © 2012 - by <a href="http://www.youtube.com/user/TellerWest">Teller</a></h6>
+		</div>
+		<div id="play">
+			<div style="position: relative; left: -16px;">
+				<div id="cube">
+				</div>
+				<div id="state">
+				</div>
+				<div style="clear: both;">
+				</div>
+			</div>
+			<div id="legend">
+			</div>
+			<div id="accuracy">
+				Accuracy: <span id="score">---</span></div>
+			<div style="font-size: 0.8em;">
+				(type or tap letter to guess)</div>
+		</div>
+		<div id="setup">
+			<input type="checkbox" id="c1" checked="checked" />
+			Green<br />
+			<input type="checkbox" id="c2" checked="checked" />
+			Blue<br />
+			<input type="checkbox" id="c3" checked="checked" />
+			Orange<br />
+			<input type="checkbox" id="c4" checked="checked" />
+			Red<br />
+			<input type="checkbox" id="c5" checked="checked" />
+			White<br />
+			<input type="checkbox" id="c6" checked="checked" />
+			Yellow<br />
+			<div id="back">
+				OK</div>
+		</div>
+		<div id="final">
+			<p id="finalScore">
+			</p>
+			<div id="replay">
+				REPLAY</div>
+		</div>
+	</div>
+	</form>
+</body>
+</html>
